@@ -17,4 +17,13 @@ app.use(express.static("public")) //iska matlab koi bhi chij jaise photovideo ye
 app.use(cookieParser())
 
 
+//routes import 
+import userRouter from './routers/user.routes.js'
+
+
+//routes declaration 
+app.use("/api/v1/users", userRouter) //yaha get ki jagha use kiya gaya hai kyuki isme hmne alag se router aur controller banaya hai
+
+//http://localhost:8000/api/v1/users/register
+
 export {app}
