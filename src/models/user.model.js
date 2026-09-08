@@ -53,10 +53,9 @@ const userSchema = new Schema(
 )
 //ye password ko encripted bana rahe
 userSchema.pre("save", async function (next) {
-    if(!this.isModified("password")) return next();//jab password change ho tabhi encription karna hai iss liye isko likha ki bar bar nahi ho
+    if(!this.isModified("password")) return;//jab password change ho tabhi encription karna hai iss liye isko likha ki bar bar nahi ho
 
-    this.password = await bcrypt.hash(this.password, 10)
-    next()
+    this.password = await bcrypt.hash(this.password, 10);
 })
 
 userSchema.methods.isPasswordCorrect = async function(password){
