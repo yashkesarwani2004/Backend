@@ -4,6 +4,7 @@ import {User} from "../models/user.model.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 const generateAccessAndRefereshTokens = async(userId) =>{
@@ -251,7 +252,7 @@ const changeCurrentPassword = asyncHandler(async(req,res) => {
 const getCurrentUser = asyncHandler(async(req,res) => {
     return res
     .status(200)
-    .json(new ApiResponse(200, req.user,"current user fetched successfully"))
+    .json(new ApiResponse(200, req.user,"User fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async(req,res) => {
@@ -304,7 +305,7 @@ const updateUserAvatar = asyncHandler(async(req,res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200,user, "Avatar image updated successfully")
+        new ApiResponse(200, user, "Avatar image updated successfully")
     )
 })
 
@@ -338,55 +339,65 @@ const updateUserCoverImage = asyncHandler(async(req,res) => {
     )
 })
 
-const getUserChannelProfile = asyncHandler(async(req,res) => {
-    const {username} = req.params //yaha params iss liye kyuki profile hamesha url me aata hai aur url se data lene ke liye params use karte hai
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params;
 
-    if(!username?.trim()){
-        throw new ApiError(400,"username is missing")
+    if (!username?.trim()) {
+        throw new ApiError(400, "username is missing");
     }
 
     const channel = await User.aggregate([
         {
-            $match: { //ye match karke vahi vale username ka data nikal kar deta hai
-                username: username?.toLowerCase()
+            $match: {
+                username: username.toLowerCase()
             }
         },
+
         {
             $lookup: {
-                from: "subcriptions", //model me sab lowercase me ho jaate hai aur last me s aa jaata hai
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
             }
         },
+
         {
             $lookup: {
-                from: "subcriptions", //model me sab lowercase me ho jaate hai aur last me s aa jaata hai
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo"
             }
         },
-        //note jab koi field ko likhta hai to $ laga kar likha jaata hai hamesha
+
         {
-            $addFields: { //ye user me jo hai fields vo to hai baki jo doge usko bhi add kar dega usme
+            $addFields: {
                 subscribersCount: {
-                    $size: "$subscribers" //ye tumere subscribers me jitne bhi doc hai sab ko add karke bata dega uske tumko subscriber count mil jaiga
+                    $size: "$subscribers"
                 },
+
                 channelsSubscribedToCount: {
-                    $size: "$subcribedTo"
+                    $size: "$subscribedTo"
                 },
+
                 isSubscribed: {
-                        $cond: {
-                            if: {$in: [req.user?._id, "$subscribers.subscriber"]},
-                            then: true,
-                            else: false
-                        }
+                    $cond: {
+                        if: {
+                            $in: [
+                                req.user?._id,
+                                "$subscribers.subscriber"
+                            ]
+                        },
+                        then: true,
+                        else: false
+                    }
                 }
             }
         },
+
         {
-            $project: { //ye sirf limited chij ko show karta hau jo tumko karna hai sab ko nahu karta
+            $project: {
                 fullName: 1,
                 username: 1,
                 subscribersCount: 1,
@@ -395,22 +406,24 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
                 avatar: 1,
                 coverImage: 1,
                 email: 1
-
             }
         }
-    ])
+    ]);
 
     if (!channel?.length) {
-        throw new ApiError(404, "channel does not exists")
+        throw new ApiError(404, "channel does not exists");
     }
 
-    return  res
-    .status(200)
-    .json(
-        new ApiError(200, channel[0] , "User channel fetched successfully" )
-    )
-
-})
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                channel[0],
+                "User channel fetched successfully"
+            )
+        );
+});
 
 
 const getWatchHistory = asyncHandler(async(req,res) => {
